@@ -8,6 +8,20 @@ LASER_SPEED = 5
 ENEMIES_SPEED = 1
 ENEMIES_DISTANCE = 50
 
+
+class Meteor(arcade.Sprite):
+    def __init__(self):
+        super().__init__('meteorit.png', 0.5)
+        self.center_x = random.randint(0, SCREEN_WIDTH)
+        self.center_y = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT * 3)
+        self.change_y = ENEMIES_SPEED + LASER_SPEED
+
+    def update(self):
+        self.center_y -= self.change_y
+        if self.top < 0:
+            self.center_y = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT * 3)
+            self.center_x = random.randint(0, SCREEN_WIDTH)
+
 class TieFighter(arcade.Sprite):
     def __init__(self):
         super().__init__('TieFighter.png', 0.2)
@@ -19,6 +33,7 @@ class TieFighter(arcade.Sprite):
         if self.top < 0:
             self.kill()
 
+
 class Laser(arcade.Sprite):
     def __init__(self):
         super().__init__('laser.png', 0.8)
@@ -26,7 +41,6 @@ class Laser(arcade.Sprite):
         self.bottom = window.falcon.top
         self.change_y = LASER_SPEED
         self.laser_sound = arcade.load_sound('laser.wav')
-
 
     def update(self):
         self.center_y += self.change_y
@@ -51,8 +65,9 @@ class Game(arcade.Window):
         self.lasers = arcade.SpriteList()
         self.enemies = arcade.SpriteList()
         self.game = True
+        self.win_sound = arcade.load_sound('A New Hope.mp3')
         self.victory = arcade.load_texture('victory.jpg')
-
+        self.meteor = Meteor()
 
     def setup(self):
         for i in range(50):
@@ -67,15 +82,20 @@ class Game(arcade.Window):
         self.falcon.draw()
         self.lasers.draw()
         self.enemies.draw()
+        self.meteor.draw()
         if len(self.enemies) == 0:
             self.game = False
+            arcade.play_sound(self.win_sound, 0.2)
             arcade.draw_texture_rectangle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT, self.victory)
+
 
     def update(self, delta_time: float):
         if self.game == True:
             self.falcon.update()
             self.lasers.update()
             self.enemies.update()
+            self.meteor.update()
+
             for laser in self.lasers:
                 hit_list = arcade.check_for_collision_with_list(laser, self.enemies)
                 if hit_list:
@@ -83,10 +103,13 @@ class Game(arcade.Window):
                     for enemy in hit_list:
                         enemy.kill()
 
+            if arcade.check_for_collision(self.meteor, self.falcon):
+                self.game = False
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
         if self.game == True:
-            self.falcon.center_x = x
+            if 0 + self.falcon.width / 2 < x < SCREEN_WIDTH - self.falcon.width / 2:
+                self.falcon.center_x = x
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
         if self.game == True:
